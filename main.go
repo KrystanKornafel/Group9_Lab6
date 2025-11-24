@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
-	"strconv"
 )
 
 // to run, simply say in the terminal "go run practiceTasks.go" in the terminal
@@ -18,27 +18,21 @@ type FetchResult struct {
 func worker(id int, jobs <-chan string, results chan<- FetchResult) {
 	//defer wg.Done()
 	//TODO: fetch the URL
-	//To read the URL from the terminal, you can do this
-	//Reference used: https://www.geeksforgeeks.org/go-language/golang-program-to-check-status-of-a-url-website/
-	// var url string
-	// fmt.Print("Enter the URL of the website: ")
-	// fmt.Scan(&url)
-	for j := 1; j <= len(jobs); j++ {
-		if j == id {
-			var url string
-			fmt.Print("Enter the URL of the website: ")
-			fmt.Scan(&url)
-			//use jobs?
-			resp, err := http.Get(url)
-			//TODO: send Result struct to results channel
-			if err != nil {
-				results <- FetchResult{URL: url, Error: err}
-			}
-			defer resp.Body.Close()
+	for j := range jobs {
+		//use jobs?
+		//hint: use resp, err := http.Get(url)
+		resp, err := http.Get(j)
+		//TODO: send Result struct to results channel
+		if err != nil {
+			results <- FetchResult{URL: j, Error: err}
+			continue
 		}
+		//successful case
+		body, err := io.ReadAll(resp.Body)
+		results <- FetchResult{URL: j, StatusCode: resp.StatusCode, Size: len(body), Error: err}
+		defer resp.Body.Close()
 	}
-	//results <- res
-	//hint: use resp, err := http.Get(url)
+
 }
 func main() {
 	//var wg sync.WaitGroup
@@ -64,7 +58,7 @@ func main() {
 
 	//TODO: Send jobs
 	for j := 1; j <= numJobs; j++ {
-		jobs <- strconv.Itoa(j)
+		jobs <- urls[j-1]
 	}
 	close(jobs)
 
