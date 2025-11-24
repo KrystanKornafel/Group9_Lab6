@@ -23,8 +23,10 @@ func worker(id int, jobs <-chan string, results chan<- FetchResult) {
 		//hint: use resp, err := http.Get(url)
 		resp, err := http.Get(j)
 		//TODO: send Result struct to results channel
+		//if unsuccessful, do this
 		if err != nil {
 			results <- FetchResult{URL: j, Error: err}
+			//continue breaks out of this error, and moves to the top of the loop again to go to the next job in the list
 			continue
 		}
 		//successful case
